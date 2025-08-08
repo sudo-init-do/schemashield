@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node (if ever used later)
+node_modules/
+
+# OS
+.DS_Store
+
+# Docker / runtime
+data/
+.env
+deploy/.env

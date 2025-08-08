@@ -1,0 +1,13 @@
+[project]
+name = "schemashield-core"
+version = "0.1.0"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic>=2",
+  "httpx",
+  "sqlmodel",
+  "sqlite-utils",
+  "jsonschema",
+  "pyyaml"
+]

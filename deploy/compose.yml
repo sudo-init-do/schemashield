@@ -1,0 +1,29 @@
+# deploy/compose.yml
+services:
+  sample-api:
+    build:
+      context: ../services/sample-api
+    container_name: schemashield-sample
+    ports:
+      - "8082:8082"
+
+  core-api:
+    build:
+      context: ../services/core-api
+    container_name: schemashield-core
+    env_file: ./.env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../data:/app/data
+
+  proxy:
+    build:
+      context: ../services/proxy
+    container_name: schemashield-proxy
+    env_file: ./.env
+    ports:
+      - "8081:8081"
+    depends_on:
+      - core-api
+      - sample-api
