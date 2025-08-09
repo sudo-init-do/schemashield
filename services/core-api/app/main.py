@@ -1,15 +1,23 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from sqlalchemy import desc, Table
 from typing import Optional, Dict, Any, cast
 from pathlib import Path
-import os, json, time, yaml
+import os
+import json
+import time
+import yaml
 
+# Database setup
 DB_PATH = os.getenv("DB_PATH", "/app/data/schemashield.sqlite")
 Path("/app/data").mkdir(parents=True, exist_ok=True)
-engine = create_engine(f"sqlite:///{DB_PATH}", connect_args={"check_same_thread": False})
+engine = create_engine(
+    f"sqlite:///{DB_PATH}", connect_args={"check_same_thread": False}
+)
 
+# Model
 class Capture(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     method: str
@@ -22,16 +30,31 @@ class Capture(SQLModel, table=True):
     latency_ms: int
     created_at: float = Field(default_factory=lambda: time.time())
 
+
+# App
 app = FastAPI(title="SchemaShield Core")
+
+# Enable CORS (needed for separate frontend UI)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # TODO: Restrict for production
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.on_event("startup")
 def startup():
     SQLModel.metadata.create_all(engine)
 
+
 @app.get("/health")
 def health():
     return {"ok": True}
 
+
+# Request body model
 class CaptureIn(SQLModel):
     method: str
     path: str
@@ -41,6 +64,7 @@ class CaptureIn(SQLModel):
     res_headers: Dict[str, Any]
     res_body: Optional[str] = None
     latency_ms: int
+
 
 @app.post("/capture")
 def capture(data: CaptureIn):
@@ -60,30 +84,39 @@ def capture(data: CaptureIn):
         s.refresh(row)
         return {"id": row.id}
 
+
 @app.get("/report")
 def report():
     with Session(engine) as s:
         rows = s.exec(select(Capture)).all()
+
     spec = {
         "openapi": "3.0.3",
         "info": {"title": "Inferred API", "version": "0.0.1"},
         "paths": {},
     }
+
     for r in rows:
         pi = spec["paths"].setdefault(r.path, {})
         op = pi.setdefault(r.method.lower(), {"responses": {}})
-        op["responses"].setdefault(str(r.status), {"description": f"Observed {r.status}"})
+        op["responses"].setdefault(
+            str(r.status), {"description": f"Observed {r.status}"}
+        )
+
     with open("/app/data/openapi.yaml", "w") as f:
         yaml.safe_dump(spec, f)
+
     return {"summary": {"endpoints": len(spec["paths"])}, "openapi": spec}
+
 
 @app.get("/mock/{full_path:path}")
 def mock(full_path: str):
     from urllib.parse import unquote
+
     path = "/" + unquote(full_path)
 
-    # Tell the type checker what this is; runtime already works
-    capture_table = cast(Table, cast(Any, Capture).__table__)  # type: ignore[attr-defined]
+    # Tell the type checker what this is
+    capture_table = cast(Table, cast(Any, Capture).__table__)
     col_id = capture_table.c.id
 
     with Session(engine) as s:

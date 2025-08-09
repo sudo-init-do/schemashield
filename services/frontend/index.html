@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>SchemaShield — Report</title>
+  <link rel="stylesheet" href="https://unpkg.com/picocss@1.5.10/css/pico.min.css">
+  <style>
+    body{max-width:980px;margin:auto;padding:24px}
+    code{background:#f6f8fa;padding:2px 6px;border-radius:6px}
+    .muted{color:#6c757d}
+    table{font-size:14px}
+  </style>
+</head>
+<body>
+  <h1>SchemaShield — Report</h1>
+  <p class="muted">Endpoints discovered from captured traffic.</p>
+
+  <div>
+    <button id="refresh">Refresh</button>
+    <span id="count" class="muted" style="margin-left:8px;"></span>
+  </div>
+
+  <article style="margin-top:16px;">
+    <table role="grid">
+      <thead>
+        <tr><th>Method</th><th>Path</th><th>Responses</th></tr>
+      </thead>
+      <tbody id="rows">
+        <tr><td colspan="3" class="muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </article>
+
+  <p class="muted" style="margin-top:10px;">API via <code>/api/</code> (proxied to core-api).</p>
+
+  <script src="app.js"></script>
+</body>
+</html>

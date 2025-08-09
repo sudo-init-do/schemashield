@@ -1,4 +1,5 @@
-# deploy/compose.yml
+version: "3.9"
+
 services:
   sample-api:
     build:
@@ -6,6 +7,7 @@ services:
     container_name: schemashield-sample
     ports:
       - "8082:8082"
+    restart: unless-stopped
 
   core-api:
     build:
@@ -15,7 +17,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ../data:/app/data
+      - schemashield_data:/app/data
+    restart: unless-stopped
 
   proxy:
     build:
@@ -27,3 +30,17 @@ services:
     depends_on:
       - core-api
       - sample-api
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../services/frontend   # Nginx-based static UI
+    container_name: schemashield-frontend
+    ports:
+      - "8090:80"                      # host:container (container is 80)
+    depends_on:
+      - core-api
+    restart: unless-stopped
+
+volumes:
+  schemashield_data:
