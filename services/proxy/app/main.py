@@ -1,5 +1,5 @@
 import os, time
-from aiohttp import web, ClientSession
+from aiohttp import web, ClientSession, ClientTimeout  # <-- added ClientTimeout
 
 PROXY_HOST = os.getenv("PROXY_HOST", "0.0.0.0")
 PROXY_PORT = int(os.getenv("PROXY_PORT", "8081"))
@@ -21,7 +21,7 @@ async def forward(request: web.Request):
             res_body = await resp.read()
     latency_ms = int((time.perf_counter() - t0) * 1000)
 
-    # fire-and-forget capture
+    # fire-and-forget capture (typed timeout)
     async with ClientSession() as session:
         payload = {
             "method": method,
@@ -34,7 +34,11 @@ async def forward(request: web.Request):
             "latency_ms": latency_ms,
         }
         try:
-            await session.post(f"{CORE_API}/capture", json=payload, timeout=5)
+            await session.post(
+                f"{CORE_API}/capture",
+                json=payload,
+                timeout=ClientTimeout(total=5),  # <-- was timeout=5
+            )
         except Exception:
             pass
 
