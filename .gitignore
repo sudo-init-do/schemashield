@@ -1,15 +1,14 @@
-# Python
+# Python / venv
 __pycache__/
 *.pyc
 .venv/
 
-# Node (if ever used later)
-node_modules/
-
-# OS
+# Editor
+.vscode/
 .DS_Store
 
-# Docker / runtime
+# Runtime data
 data/
-.env
 deploy/.env
+/app/data/
+openapi.yaml
