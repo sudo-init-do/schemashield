@@ -4,35 +4,149 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>SchemaShield — Report</title>
-  <link rel="stylesheet" href="https://unpkg.com/picocss@1.5.10/css/pico.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#64748b',
+            success: '#10b981',
+            warning: '#f59e0b',
+            error: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    body{max-width:980px;margin:auto;padding:24px}
-    code{background:#f6f8fa;padding:2px 6px;border-radius:6px}
-    .muted{color:#6c757d}
-    table{font-size:14px}
+    .method-badge {
+      @apply px-2 py-1 text-xs font-semibold rounded-full;
+    }
+    .method-get { @apply bg-green-100 text-green-800; }
+    .method-post { @apply bg-blue-100 text-blue-800; }
+    .method-put { @apply bg-yellow-100 text-yellow-800; }
+    .method-patch { @apply bg-orange-100 text-orange-800; }
+    .method-delete { @apply bg-red-100 text-red-800; }
+    .method-options { @apply bg-purple-100 text-purple-800; }
+    .method-head { @apply bg-gray-100 text-gray-800; }
+    
+    .loading-spinner {
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
-<body>
-  <h1>SchemaShield — Report</h1>
-  <p class="muted">Endpoints discovered from captured traffic.</p>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2">SchemaShield — Report</h1>
+      <p class="text-gray-600 text-lg">API endpoints discovered from captured traffic</p>
+    </div>
 
-  <div>
-    <button id="refresh">Refresh</button>
-    <span id="count" class="muted" style="margin-left:8px;"></span>
+    <!-- Stats Card -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Endpoints</h3>
+          <p id="endpoint-count" class="text-3xl font-bold text-gray-900 mt-1">0</p>
+        </div>
+        <div class="bg-blue-50 p-3 rounded-full">
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <!-- Search Input -->
+        <div class="flex-1 min-w-0">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <input
+              id="search-input"
+              type="text"
+              placeholder="Search endpoints by path or method..."
+              class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+        
+        <!-- Refresh Button -->
+        <button
+          id="refresh-btn"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+        >
+          <svg id="refresh-icon" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span id="refresh-text">Refresh</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Endpoints Table/Cards -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <!-- Desktop Table View -->
+      <div class="hidden md:block">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Path</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responses</th>
+            </tr>
+          </thead>
+          <tbody id="endpoints-table" class="bg-white divide-y divide-gray-200">
+            <!-- Endpoints will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div id="endpoints-cards" class="md:hidden divide-y divide-gray-200">
+        <!-- Endpoint cards will be inserted here -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="text-center py-12 hidden">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No endpoints found</h3>
+        <p class="mt-1 text-sm text-gray-500">No captures yet. Hit the proxy and click Refresh.</p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading-state" class="text-center py-12">
+        <svg class="animate-spin mx-auto h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="mt-2 text-sm text-gray-500">Loading endpoints...</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-8 text-center">
+      <p class="text-sm text-gray-500">
+        API via <code class="bg-gray-100 px-2 py-1 rounded text-xs">/api/</code> (proxied to core-api)
+      </p>
+    </div>
   </div>
-
-  <article style="margin-top:16px;">
-    <table role="grid">
-      <thead>
-        <tr><th>Method</th><th>Path</th><th>Responses</th></tr>
-      </thead>
-      <tbody id="rows">
-        <tr><td colspan="3" class="muted">Loading…</td></tr>
-      </tbody>
-    </table>
-  </article>
-
-  <p class="muted" style="margin-top:10px;">API via <code>/api/</code> (proxied to core-api).</p>
 
   <script src="app.js"></script>
 </body>

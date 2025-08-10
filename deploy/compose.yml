@@ -32,10 +32,10 @@ services:
       - sample-api
     restart: unless-stopped
 
-  frontend:
+  report-ui:
     build:
-      context: ../services/frontend   # Nginx-based static UI
-    container_name: schemashield-frontend
+      context: ../services/report-ui   # Enhanced React+TailwindCSS UI
+    container_name: schemashield-report-ui
     ports:
       - "8090:80"                      # host:container (container is 80)
     depends_on:
